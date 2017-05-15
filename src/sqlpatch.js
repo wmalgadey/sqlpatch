@@ -13,7 +13,7 @@ var crypto = require('crypto');
 function sqlpatch(fileList, writer, options) {
 
     options = extend({
-        dialect: 'postgres',
+        dialect: 'mssql',
         schema: 'sqlpatch',
         table: 'batch_000',
     }, options);
@@ -91,12 +91,24 @@ function readFileInfo(file) {
     checksum.update(content.replace(/(\-\-.*$|\/\*[.\n]*?\*\/|[\n\s]*)*/gm, ''));
 
     var properties = readProperties(content);
+    var parts = breakContentOnGo(content);
     return {
         file: file,
         content: content,
+        parts: parts,
         properties: properties,
         checksum: checksum.digest('hex'),
     };
+}
+
+function breakContentOnGo(content) {
+    var result = [];
+    var match;
+    var re = /([\s\S]*?)(GO|go)$/gm;
+    while ((match = re.exec(content))) {
+        result.push({part: match[1].replace(/'/g, "''")});
+    }
+    return result;
 }
 
 function readProperties(content) {
